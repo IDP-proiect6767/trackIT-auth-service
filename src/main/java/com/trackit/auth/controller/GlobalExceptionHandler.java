@@ -90,6 +90,12 @@ public class GlobalExceptionHandler {
         return new ErrorResponse("FORBIDDEN", "Access denied", Instant.now(), null);
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleIllegalState(IllegalStateException ex) {
+        return new ErrorResponse("CONFLICT", ex.getMessage(), Instant.now(), null);
+    }
+
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleUnexpected(Exception ex) {
