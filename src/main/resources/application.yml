@@ -20,5 +20,12 @@ spring:
     default-schema: auth
     baseline-on-migrate: true
 
+auth:
+  jwt:
+    secret: ${AUTH_JWT_SECRET:change-me-change-me-change-me-change-me}
+    access-ttl-seconds: ${AUTH_JWT_ACCESS_TTL:900}
+    refresh-ttl-seconds: ${AUTH_JWT_REFRESH_TTL:604800}
+    issuer: trackit-auth
+
 server:
   port: 8081
