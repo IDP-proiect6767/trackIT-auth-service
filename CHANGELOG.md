@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Phase 2 — Domain & persistence**: `Role` enum, `User` and `RefreshToken` JPA entities (Lombok, `@CreationTimestamp`/`@UpdateTimestamp`), `UserRepository` and `RefreshTokenRepository` with custom queries for token revocation and cleanup.
 - **Phase 3 — DTOs**: All request/response records — auth (`RegisterRequest`, `LoginRequest`, `RefreshRequest`, `LogoutRequest`, `ValidateRequest`, `TokenPair`, `AuthResponse`, `ValidationResponse`), user (`UserResponse`, `ChangePasswordRequest`, `UpdateProfileRequest`), admin (`AdminUpdateUserRequest`, `PageResponse<T>`), and `ErrorResponse` with stable error codes.
 - **Phase 4 — JWT layer**: `JwtProperties` (`@ConfigurationProperties`, validates secret ≥ 32 bytes on startup), `JwtService` (generate/parse/tryParse with HS256). Maven toolchain locked to Java 21 (Bellsoft) via `.mvn/toolchains.xml` to avoid Lombok breakage under Java 25. 7 unit tests green: roundtrip, expired, tampered payload, wrong-key, tryParse empty/valid, short-secret guard.
+- **Phase 5 — Spring Security**: `CustomUserDetailsService` (loads user, maps `lockedUntil` to `accountNonLocked`), `JwtAuthenticationFilter` (stateless Bearer extraction, no DB hit), `SecurityConfig` (CSRF off, stateless sessions, permit-list, JSON `AuthenticationEntryPoint`/`AccessDeniedHandler`, `BCryptPasswordEncoder(12)`).
 
 <!--
 Section types you can use under each release (omit empty ones):
