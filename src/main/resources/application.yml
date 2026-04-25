@@ -2,5 +2,23 @@ spring:
   application:
     name: auth-service
 
+  datasource:
+    url: ${AUTH_DB_URL:jdbc:postgresql://localhost:5432/auth_db}
+    username: ${AUTH_DB_USER:auth_user}
+    password: ${AUTH_DB_PASSWORD:auth_pass}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: auth
+    open-in-view: false
+
+  flyway:
+    schemas: auth
+    default-schema: auth
+    baseline-on-migrate: true
+
 server:
   port: 8081

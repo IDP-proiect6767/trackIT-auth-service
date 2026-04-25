@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial implementation plan (`IMPLEMENTATION_PLAN.md`).
 - This `CHANGELOG.md`.
 - **Phase 0 — Project bootstrap**: `pom.xml` (Spring Boot 3.4.1, Java 21), `AuthServiceApplication`, minimal `application.yml` (port 8081), `.gitignore`. `mvn verify` passes.
+- **Phase 1 — Database schema**: Flyway migrations `V1__init_auth_schema.sql` (creates `auth.users` and `auth.refresh_tokens` with indexes) and `V2__seed_admin.sql` (dev admin user). `application.yml` extended with datasource, JPA, and Flyway config.
 
 <!--
 Section types you can use under each release (omit empty ones):
