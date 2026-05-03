@@ -27,5 +27,18 @@ auth:
     refresh-ttl-seconds: ${AUTH_JWT_REFRESH_TTL:604800}
     issuer: trackit-auth
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
 server:
   port: 8081

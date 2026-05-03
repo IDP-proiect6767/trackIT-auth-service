@@ -1,7 +1,5 @@
 # TrackIT Auth Service — Full Implementation Plan
 
-> **For:** Claude Code agent. Implement **one phase at a time**. After each phase: stop, summarize what was done, update `[Unreleased]` in `CHANGELOG.md`, and wait for the user to review/commit before continuing to the next phase. Do not skip ahead.
-
 ## Project context
 
 - **Stack:** Java 21, Spring Boot 3.4.x, Maven, PostgreSQL 16, Flyway, Spring Security, JJWT 0.12.x, Testcontainers, Lombok.
@@ -14,8 +12,6 @@
 
 - **Package base:** `com.trackit.auth`
 - **API prefix:** `/api/v1`
-- **Commits:** Conventional Commits (`feat:`, `chore:`, `test:`, `docs:`, `ci:`, `build:`, `fix:`).
-- **Branching:** Work on `main` (solo project). At least one commit per phase.
 - **JWT alg:** HS256, secret from env var `AUTH_JWT_SECRET` (min 32 bytes).
   - **Access token TTL:** 15 minutes. Claims: `sub` (userId), `username`, `role`, `iat`, `exp`, `iss`, `type=access`.
   - **Refresh token:** opaque random string (256 bits, base64url-encoded), stored hashed (SHA-256) in DB. TTL 7 days. Rotation on every refresh.

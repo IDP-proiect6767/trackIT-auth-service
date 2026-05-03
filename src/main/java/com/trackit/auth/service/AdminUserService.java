@@ -7,6 +7,7 @@ import com.trackit.auth.dto.PageResponse;
 import com.trackit.auth.dto.UserResponse;
 import com.trackit.auth.exception.UserNotFoundException;
 import com.trackit.auth.repository.UserRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,6 +23,7 @@ public class AdminUserService {
 
     private final UserRepository userRepository;
     private final RefreshTokenService refreshTokenService;
+    private final MeterRegistry meterRegistry;
 
     public PageResponse<UserResponse> listUsers(int page, int size, String search) {
         var pageable = PageRequest.of(page, size, Sort.by("id"));
@@ -61,6 +63,7 @@ public class AdminUserService {
             userRepository.save(user);
             refreshTokenService.revokeAllForUser(user.getId());
         }
+        meterRegistry.counter("auth_admin_actions_total", "action", "update").increment();
         return toResponse(user);
     }
 
@@ -77,6 +80,7 @@ public class AdminUserService {
         user.setEnabled(false);
         userRepository.save(user);
         refreshTokenService.revokeAllForUser(user.getId());
+        meterRegistry.counter("auth_admin_actions_total", "action", "delete").increment();
     }
 
     private User load(Long id) {

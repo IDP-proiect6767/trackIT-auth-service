@@ -8,7 +8,9 @@ import com.trackit.auth.dto.*;
 import com.trackit.auth.exception.*;
 import com.trackit.auth.repository.UserRepository;
 import com.trackit.auth.security.JwtService;
-import io.jsonwebtoken.Claims;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,9 +27,23 @@ public class AuthService {
     private final JwtService jwtService;
     private final JwtProperties jwtProperties;
     private final PasswordEncoder passwordEncoder;
+    private final MeterRegistry meterRegistry;
 
     private static final int MAX_FAILED_ATTEMPTS = 5;
     private static final long LOCK_DURATION_SECONDS = 15 * 60;
+
+    private Counter registrationsTotal;
+    private Counter loginsSuccess;
+    private Counter tokensRefreshed;
+    private Counter logoutsTotal;
+
+    @PostConstruct
+    void initMetrics() {
+        registrationsTotal = meterRegistry.counter("auth_registrations_total");
+        loginsSuccess      = meterRegistry.counter("auth_logins_success_total");
+        tokensRefreshed    = meterRegistry.counter("auth_tokens_refreshed_total");
+        logoutsTotal       = meterRegistry.counter("auth_logouts_total");
+    }
 
     @Transactional
     public AuthResponse register(RegisterRequest req) {
@@ -45,23 +61,31 @@ public class AuthService {
                 .failedLoginAttempts(0)
                 .build();
         userRepository.save(user);
-
+        registrationsTotal.increment();
         return buildAuthResponse(user);
     }
 
     @Transactional
     public AuthResponse login(LoginRequest req) {
         User user = userRepository.findByUsername(req.username())
-                .orElseThrow(InvalidCredentialsException::new);
+                .orElseThrow(() -> {
+                    loginFailure("unknown_user");
+                    return new InvalidCredentialsException();
+                });
 
         Instant now = Instant.now();
-        if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(now))
+        if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(now)) {
+            loginFailure("locked");
             throw new AccountLockedException(user.getLockedUntil());
+        }
 
-        if (!user.isEnabled())
+        if (!user.isEnabled()) {
+            loginFailure("disabled");
             throw new AccountDisabledException();
+        }
 
         if (!passwordEncoder.matches(req.password(), user.getPasswordHash())) {
+            loginFailure("bad_password");
             int attempts = user.getFailedLoginAttempts() + 1;
             if (attempts >= MAX_FAILED_ATTEMPTS) {
                 user.setFailedLoginAttempts(0);
@@ -77,7 +101,7 @@ public class AuthService {
         user.setFailedLoginAttempts(0);
         user.setLockedUntil(null);
         userRepository.save(user);
-
+        loginsSuccess.increment();
         return buildAuthResponse(user);
     }
 
@@ -87,6 +111,7 @@ public class AuthService {
         User user = old.getUser();
         String accessToken = jwtService.generateAccessToken(user);
         String newRefresh = refreshTokenService.issue(user);
+        tokensRefreshed.increment();
         return new TokenPair(accessToken, newRefresh, "Bearer",
                 jwtProperties.getAccessTtlSeconds(), jwtProperties.getRefreshTtlSeconds());
     }
@@ -94,6 +119,7 @@ public class AuthService {
     @Transactional
     public void logout(String rawRefreshToken) {
         refreshTokenService.revoke(rawRefreshToken);
+        logoutsTotal.increment();
     }
 
     public ValidationResponse validate(String accessToken) {
@@ -104,6 +130,10 @@ public class AuthService {
                 claims.get("role", String.class),
                 claims.getExpiration().toInstant().getEpochSecond()
         )).orElse(new ValidationResponse(false, null, null, null, null));
+    }
+
+    private void loginFailure(String reason) {
+        meterRegistry.counter("auth_logins_failure_total", "reason", reason).increment();
     }
 
     private AuthResponse buildAuthResponse(User user) {

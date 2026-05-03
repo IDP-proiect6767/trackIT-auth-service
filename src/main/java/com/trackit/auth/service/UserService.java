@@ -7,6 +7,7 @@ import com.trackit.auth.exception.InvalidPasswordException;
 import com.trackit.auth.exception.UserAlreadyExistsException;
 import com.trackit.auth.exception.UserNotFoundException;
 import com.trackit.auth.repository.UserRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
+    private final MeterRegistry meterRegistry;
 
     public UserResponse getCurrentUser(String username) {
         return userRepository.findByUsername(username)
@@ -38,6 +40,7 @@ public class UserService {
         user.setPasswordHash(passwordEncoder.encode(req.newPassword()));
         userRepository.save(user);
         refreshTokenService.revokeAllForUser(user.getId());
+        meterRegistry.counter("auth_password_changes_total").increment();
     }
 
     @Transactional
